@@ -77,7 +77,9 @@
 
 -(void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
 {
+    [self.view endEditing:YES];
     [self requestWithCity:searchBar.text];
+    [self saveCityName:searchBar.text];
     [self.tableView reloadData];
     [self.weatherCell setNeedsLayout];
 }
@@ -89,7 +91,26 @@
     self.searchBar = [[UISearchBar alloc]init];
     self.searchBar.delegate = self;
     [self.view addSubview:self.searchBar];
-    [self requestWithCity:@"beijing"];
+    NSString *cityName = [self loadCityName];
+    if (cityName == NULL)
+    {
+        cityName = @"beijing";
+    }
+    [self requestWithCity:cityName];
+}
+
+-(void)saveCityName:(NSString *)cityName
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:cityName forKey:@"cityName"];
+    [defaults synchronize];
+}
+
+-(NSString *)loadCityName
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString *cityName = [defaults objectForKey:@"cityName"];
+    return cityName;
 }
 
 -(void)requestWithCity:(NSString *)cityName
@@ -177,23 +198,22 @@
     return cell;
 }
 
--(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
     [self.view endEditing:YES];
-    if (self.switchTip == YES)
+    if (scrollView.contentOffset.y < 0)
     {
-        self.searchBar.frame = CGRectMake(0, 0, 0, 0);
-        self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
-        self.switchTip = NO;
-    }
-    else if (self.switchTip == NO)
-    {
-        
         [UIView animateWithDuration:0.3 animations:^{
             self.searchBar.frame = CGRectMake(0, -44, self.view.width, 44);
             self.tableView.contentInset = UIEdgeInsetsMake(44, 0, 0, 0);
         }];
         self.switchTip = YES;
+    }
+    else if (scrollView.contentOffset.y > -44)
+    {
+        self.searchBar.frame = CGRectMake(0, 0, 0, 0);
+        self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
+        self.switchTip = NO;
     }
 }
 
